@@ -7,10 +7,8 @@ const Category = require('../models/Category');
 beforeAll(async () => {
   await sequelize.sync({ force: true });
 
-  // Create a category for products
   const category = await Category.create({ category_name: 'Test Category' });
 
-  // Create products
   const product1 = await Product.create({
     product_name: 'Test Product 1',
     price: 19.99,
@@ -25,16 +23,13 @@ beforeAll(async () => {
     category_id: category.id,
   });
 
-  // Create tags
   const tag1 = await Tag.create({ tag_name: 'Test Tag 1' });
   const tag2 = await Tag.create({ tag_name: 'Test Tag 2' });
 
-  // Associate products with tags
   await ProductTag.create({ product_id: product1.id, tag_id: tag1.id });
   await ProductTag.create({ product_id: product1.id, tag_id: tag2.id });
   await ProductTag.create({ product_id: product2.id, tag_id: tag1.id });
 
-  // Logging for debugging
   console.log(`Category ID: ${category.id}`);
   console.log(`Product 1 ID: ${product1.id}`);
   console.log(`Product 2 ID: ${product2.id}`);
@@ -51,6 +46,7 @@ describe('ProductTag Model', () => {
     const productTag = await ProductTag.findOne({
       where: { product_id: 1, tag_id: 1 },
     });
+    console.log('ProductTag Association:', JSON.stringify(productTag, null, 2));
     expect(productTag).toBeDefined();
     expect(productTag.product_id).toBe(1);
     expect(productTag.tag_id).toBe(1);
@@ -58,9 +54,14 @@ describe('ProductTag Model', () => {
 
   it('should retrieve products with their associated tags', async () => {
     const product = await Product.findByPk(1, {
-      include: [{ model: Tag, through: { attributes: [] } }],
+      include: [{ model: Tag, through: ProductTag }],
     });
-
+    console.log('Product with Tags:', JSON.stringify(product, null, 2));
+    if (product && product.Tags) {
+      product.Tags.forEach((tag, index) => {
+        console.log(`Tag ${index + 1}:`, JSON.stringify(tag, null, 2));
+      });
+    }
     expect(product).toBeDefined();
     expect(product.Tags).toBeInstanceOf(Array);
     expect(product.Tags.length).toBeGreaterThan(0);
@@ -68,9 +69,14 @@ describe('ProductTag Model', () => {
 
   it('should retrieve tags with their associated products', async () => {
     const tag = await Tag.findByPk(1, {
-      include: [{ model: Product, through: { attributes: [] } }],
+      include: [{ model: Product, through: ProductTag }],
     });
-
+    console.log('Tag with Products:', JSON.stringify(tag, null, 2));
+    if (tag && tag.Products) {
+      tag.Products.forEach((product, index) => {
+        console.log(`Product ${index + 1}:`, JSON.stringify(product, null, 2));
+      });
+    }
     expect(tag).toBeDefined();
     expect(tag.Products).toBeInstanceOf(Array);
     expect(tag.Products.length).toBeGreaterThan(0);
